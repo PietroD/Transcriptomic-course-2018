@@ -12,6 +12,8 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+### Manipolazione delle reads grezze e controllo qualità
+
 Accendere il computer e aprire il terminale
 
 ![](images/ubuntu_terminal.png)
@@ -100,7 +102,11 @@ Per ogni file di input vengono creati 2 file di output, un file html e una carte
 
 A questo punto commentiamo insieme i risultati del controllo qualità confrontandoci con qualità di riferimento sul sito di FastQC e con la spiegazione dei moduli di analisi (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/)
 
+Dopo aver deciso insieme quali parametri utilizzare per correggere la qualità delle nostre reads ed aver identificato gli adattatori da rimuovere, andiamo ad effettuare la rimozione degli adattatori e il quality trimming
 
+### Adapters removal and quality trimming
+
+Per effettuare queste due operazioni useremo un unico programma che si chiama **Trimmomatic**. Il suo utilizzo è molto simile a quello di FastQC (anche Trimmomatic è scritto in Java) e ha bisogno come input delle sequenze grezze
 
 
 
