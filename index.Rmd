@@ -96,6 +96,13 @@ cd ..
 
 Per ogni file di input vengono creati 2 file di output, un file html e una cartella compressa. Andiamo ad esplorare il report in formato html aprendolo con Firefox
 
+![FastQC report](images/fastqc.png)
+
+A questo punto commentiamo insieme i risultati del controllo qualità confrontandoci con qualità di riferimento sul sito di FastQC e con la spiegazione dei moduli di analisi (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/)
+
+
+
+
 
 
 
