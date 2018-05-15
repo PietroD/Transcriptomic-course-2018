@@ -12,7 +12,7 @@
 
 <meta name="author" content="Pietro Delfino" />
 
-<meta name="date" content="2018-05-14" />
+<meta name="date" content="2018-05-15" />
 
 <title>Trascrittomica 2018</title>
 
@@ -71,7 +71,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <section class="page-header">
 <h1 class="title toc-ignore project-name">Trascrittomica 2018</h1>
 <h4 class="author project-author">Pietro Delfino</h4>
-<h4 class="date project-date">2018-05-14</h4>
+<h4 class="date project-date">2018-05-15</h4>
 </section>
 
 
@@ -95,7 +95,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <pre><code>## totale 17M
 ## -rw-r--r-- 1 dianalab dianalab 8,3M mag 14 14:50 Sample_Untreated_1_1_subset.fastq.gz
 ## -rw-r--r-- 1 dianalab dianalab 8,4M mag 14 14:55 Sample_Untreated_1_2_subset.fastq.gz
-## drwxrwxr-x 4 dianalab dianalab 4,0K mag 14 16:14 fastqc</code></pre>
+## drwxrwxr-x 3 dianalab dianalab 4,0K mag 15 10:58 Trimmomatic
+## drwxrwxr-x 5 dianalab dianalab 4,0K mag 15 11:08 fastqc</code></pre>
 <p>La cartella dovrebbe essere vuota. Come prima cosa dobbiamo recuperare i file grezzi (FASTQ) del nostro esperimento. Per recuperare i file ci connettiamo al nostro server di laboratorio e con il protocollo di trasferimento <strong>ssh</strong> copiamo in locale (la cartella dove siamo in questo momento) i 2 file corrispondenti alle reads forward e alle reads reverse. Lavoreremo con un solo campione, ma come sapete l’esperimento consiste di 3 repliche biologiche per i non trattati e 3 repliche biologiche per quelli trattati. I comandi che qui eseguiremo possono essere ripetuti su più file contemporaneamente tramite appositi comandi come i cicli <code>for</code></p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># prima scarichiamo il primo file (attenzione al punto in fondo al comando, indica current directory)</span>
 <span class="fu">scp</span> trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/Sample_Untreated_1_1_subset.fastq.gz .
@@ -151,7 +152,58 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </div>
 <div id="adapters-removal-and-quality-trimming" class="section level3">
 <h3>Adapters removal and quality trimming</h3>
-<p>Per effettuare queste due operazioni useremo un unico programma che si chiama <strong>Trimmomatic</strong>. Il suo utilizzo è molto simile a quello di FastQC (anche Trimmomatic è scritto in Java) e ha bisogno come input delle sequenze grezze</p>
+<p>Per effettuare queste due operazioni useremo un unico programma che si chiama <strong>Trimmomatic</strong> (<a href="http://www.usadellab.org/cms/?page=trimmomatic" class="uri">http://www.usadellab.org/cms/?page=trimmomatic</a>). Il suo utilizzo è molto simile a quello di FastQC (anche Trimmomatic è scritto in Java) e necessita come input le sequenze grezze. Per ogni file di input (nel nostro caso 2 file) verranno creati 2 file di output, uno indicato come paired, l’altro come unpaired; è necessario indicare il nome di ciascuno dei file di output. Le opzioni di Trimmomatic sono:</p>
+<ul>
+<li><code>PE</code> indica che lavoriamo su file paired-end</li>
+<li><code>-trimlog</code> indica che vogliamo salvare un file di log</li>
+<li><code>-threads</code> indica il numero di processori che vogliamo utilizzare per lanciare il programma</li>
+<li><code>ILLUMINACLIP:ALL_ADAPTERS.fa:2:30:10</code> è la parte che indica la rimozione degli adattatori. Il file <em>ALL_ADAPTERS.fa</em> è il file in formato fasta che contiene la sequenza degli adattatori maggiormente utilizzati</li>
+<li><code>LEADING:16</code> indica la rimozione di N basi in testa alla sequenza, sotto la qualità indicata</li>
+<li><code>TRAILING:16</code> indica la rimozione di N basi in coda alla sequenza, sotto la qualità indicata</li>
+<li><code>SLIDINGWINDOW:4:25</code> effettua un trimming basato su una “finestra”&quot; di basi, rimuovendo le basi nel momento in cui la qualità media per quella finestra scende sotto la qualità indicata</li>
+<li><code>MINLEN:36</code> indica la rimozione delle reads che sono più corte della lunghezza indicata</li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># ci spostiamo nella cartella tc, creiamo nuova cartella e scarichiamo il programma</span>
+<span class="co"># usiamo percorso assoluto da qualsiasi punto del computer per spostarci dentro una qualsiasi cartella</span>
+<span class="bu">cd</span> /home/usr/Scaricati/tc <span class="co"># usr è specifico per il vostro utente (il mio è dlfptr70)</span>
+<span class="fu">mkdir</span> Trimmomatic
+<span class="fu">wget</span> http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O Trimmomatic/Trimmomatic-0.36.zip <span class="co"># con l'opzione -O specifichiamo dove vogliamo scaricare il file e con che nome</span>
+<span class="co"># decomprimiamo senza cambiare cartella e rimuoviamo l'archivio</span>
+<span class="fu">unzip</span> Trimmomatic/Trimmomatic-0.36.zip -d Trimmomatic/ <span class="kw">&amp;&amp;</span> <span class="fu">rm</span> Trimmomatic/Trimmomatic-0.36.zip
+<span class="co"># controlliamo il funzionamento del programma</span>
+<span class="ex">java</span> -jar Trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar -h <span class="co"># -h è l'opzione per help</span></code></pre></div>
+<p>A questo punto possiamo lanciare Trimmomatic sui nostri file; anche se dal controllo qualità non abbiamo identificato sequenze di adattatori come contaminanti, un classico approccio potrebbe essere quello di dare come input di file degli adattatori il file fornito dal programma che quindi rimuoverà tutte le sequenze corrispondenti a quelle che trova</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># creiamo file unendo in uno tutti gli adattatori</span>
+<span class="fu">cat</span> Trimmomatic/Trimmomatic-0.36/adapters/*.fa <span class="op">&gt;</span> Trimmomatic/Trimmomatic-0.36/adapters/ALL_ADAPTERS.fa
+<span class="co"># cat è un comando che unisce file &quot;row-wise&quot;; l'asterisco (*.fa) indica di selezionare tutti i file che hanno estensione .fa</span>
+<span class="ex">java</span> -jar Trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 10 -trimlog \
+Trimmomatic/log_trimmomatic \
+Sample_Untreated_1_1_subset.fastq.gz Sample_Untreated_1_2_subset.fastq.gz \
+Trimmomatic/Sample_Untreated_1_1_subset_trim_paired.fastq.gz Trimmomatic/Sample_Untreated_1_1_subset_trim_unpaired.fastq.gz \
+Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz Trimmomatic/Sample_Untreated_1_2_subset_trim_unpaired.fastq.gz \
+ILLUMINACLIP:Trimmomatic/Trimmomatic-0.36/adapters/ALL_ADAPTERS.fa:2:30:10 \
+LEADING:16 TRAILING:16 SLIDINGWINDOW:4:25 MINLEN:36 <span class="op">&amp;&gt;</span> Trimmomatic/log_trimmomatic_screen
+<span class="co"># con il simbolo &amp;&gt; andiamo a salvare su un file anche l'output che normalmente sarebbe stampato sullo schermo</span></code></pre></div>
+<p>Dovrebbe terminare dopo qualche secondo senza aver stampato a schermo alcuna informazione. Andiamo a vedere se ha creato i file ed esaminiamo i file di log (log_trimmomatic e log_trimmomatic_screen); il primo contiene le seguenti info per ciascuna read:</p>
+<ul>
+<li>the read name</li>
+<li>the surviving sequence length</li>
+<li>the location of the first surviving base, aka. the amount trimmed from the start</li>
+<li>the location of the last surviving base in the original read</li>
+<li>the amount trimmed from the end</li>
+</ul>
+<p>Il secondo contiene le statistiche generali</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># guardiamo prima le statistiche generali</span>
+<span class="fu">less</span> -S Trimmomatic/log_trimmomatic_screen
+<span class="co"># poi l'altro file</span>
+<span class="fu">less</span> -S Trimmomatic/log_trimmomatic</code></pre></div>
+<p>A questo punto ripetiamo il controllo di qualità, questa volta sulle reads trimmate, solo sui file paired</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># creiamo cartella dove salveremo nuovo controllo qualità</span>
+<span class="fu">mkdir</span> fastqc/results_after_trimming
+<span class="co"># lanciamo FastQC sulle sequenze trimmate</span>
+<span class="ex">./fastqc/FastQC/fastqc</span> Trimmomatic/Sample_Untreated_1_1_subset_trim_paired.fastq.gz \
+Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz -o fastqc/results_after_trimming/</code></pre></div>
+<p>Andiamo ad esplorare i report e vedere se le statistiche sulla qualità sono cambiate</p>
 </div>
 </section>
 
