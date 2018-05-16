@@ -1,0 +1,186 @@
+---
+title: "Trascrittomica 2018"
+author: "Pietro Delfino"
+date: "`r format (Sys.Date())`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Manipolazione delle reads grezze e controllo qualità
+
+Accendere il computer e aprire il terminale
+
+![](images/ubuntu_terminal.png)
+
+Spostarsi nella cartella `Scaricati`, create una nuova cartella chiamandola `tc`
+
+```{r, engine = 'bash', eval = F}
+cd Scaricati/
+
+mkdir tc
+```
+
+Entrare nella cartella appena creata e valutarne il contenuto della cartella digitare il seguente comando
+
+```{r, engine = 'bash', eval = T}
+cd Scaricati/tc/
+
+ls -lrth
+```
+
+La cartella dovrebbe essere vuota. Come prima cosa dobbiamo recuperare i file grezzi (FASTQ) del nostro esperimento. Per recuperare i file ci connettiamo al nostro server di laboratorio e con il protocollo di trasferimento **ssh** copiamo in locale (la cartella dove siamo in questo momento) i 2 file corrispondenti alle reads forward e alle reads reverse. Lavoreremo con un solo campione, ma come sapete l'esperimento consiste di 3 repliche biologiche per i non trattati e 3 repliche biologiche per quelli trattati. I comandi che qui eseguiremo possono essere ripetuti su più file contemporaneamente tramite appositi comandi come i cicli `for`
+
+```{r, engine = 'bash', eval = F}
+# prima scarichiamo il primo file (attenzione al punto in fondo al comando, indica current directory)
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/Sample_Untreated_1_1_subset.fastq.gz .
+# inserire la password quando ce la chiede (trascrittomica2017)
+
+# controlliamo che sia stato scaricato
+ls -lrth
+# ora scarichiamo il secondo file
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/Sample_Untreated_1_2_subset.fastq.gz .
+# inserire nuovamente la password
+# controlliamo
+ls -lrth
+```
+
+Come potete osservare la dimensione di questi file è molto bassa rispetto alla dimensione tipica di un file che risulta da un esperimento di sequenziamento come lo abbiamo descritto. Questo perché i file originali sono stati copiati e ridotti in dimensioni con lo scopo di riuscire a manipolarli e lavorarci nei tempi della lezione, principalmente per il fatto che le capacità dei computer che stiamo usando potrebbero essere limitate e quindi non in grado di eleaborare questi file in tempi brevi
+
+Iniziamo con esplorare questi file
+
+```{r, engine = 'bash', eval = F}
+# "apriamo" il file
+less -S Sample_Untreated_1_1_subset.fastq.gz
+# contiamo il numero di reads
+zcat Sample_Untreated_1_1_subset.fastq.gz | echo $((`wc -l`/4))
+zcat Sample_Untreated_1_2_subset.fastq.gz | echo $((`wc -l`/4))
+# il numero di reads F e R coincide?
+```
+
+Per effettuare il controllo di qualità sulle nostre reads utilizzeremo il programma **FastQC** (http://www.bioinformatics.babraham.ac.uk/projects/fastqc/). Questo software (scritto in Java) prende come input un numero a piacimento di reads e calcola varie statistiche che possono dare un'idea della qualità dei nostri dati
+
+```{r, engine = 'bash', eval = F}
+# creiamo una nuova cartella dove scaricheremo il programma e salveremo i risultati
+mkdir fastqc
+cd fastqc/
+# scarichiamo il programma con il comando wget
+wget http://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.7.zip
+# scompattiamo la cartella
+unzip fastqc_v0.11.7.zip
+# rimuoviamo cartella compressa
+rm fastqc_v0.11.7.zip
+# vediamo cosa c'è dentro la cartella senza spostarci dentro (percorso relativo alla nostra posizione)
+ls -lrth FastQC/
+# il file che ci interessa, cioè il programma che andremo a richiamare è "fastqc"
+# dobbiamo prima renderlo eseguibile
+chmod 755 fastqc
+# controlliamo che funzioni
+./fastcq -h
+```
+
+A questo punto possiamo lanciare il programma dando come input i due file con le reads F e R. Il comando è molto semplice, basta specificare i nomi dei file che vogliamo controllare, e la cartella dove vogliamo che vengano salvati i report coi risultati (la cartella deve già esistere quindi prima la creiamo)
+
+```{r, engine = 'bash', eval = F}
+# torniamo indietro alla cartella fastqc e creiamo cartella per salvare i risultati
+cd ..
+mkdir results
+# ci spostiamo una cartella su, dove stanno i nostri file
+cd ..
+# eseguiamo il programma (dobbiamo specificare il percorso dell'eseguibile rispetto a dove siamo) e specifichiamo inoltre il percorso della cartella di output
+./fastqc/FastQC/fastqc Sample_Untreated_1_1_subset.fastq.gz Sample_Untreated_1_2_subset.fastq.gz -o fastqc/results/
+```
+
+Per ogni file di input vengono creati 2 file di output, un file html e una cartella compressa. Andiamo ad esplorare il report in formato html aprendolo con Firefox
+
+![FastQC report](images/fastqc.png)
+
+A questo punto commentiamo insieme i risultati del controllo qualità confrontandoci con qualità di riferimento sul sito di FastQC e con la spiegazione dei moduli di analisi (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/)
+
+Dopo aver deciso insieme quali parametri utilizzare per correggere la qualità delle nostre reads ed aver identificato gli adattatori da rimuovere, andiamo ad effettuare la rimozione degli adattatori e il quality trimming
+
+### Adapters removal and quality trimming
+
+Per effettuare queste due operazioni useremo un unico programma che si chiama **Trimmomatic** (http://www.usadellab.org/cms/?page=trimmomatic). Il suo utilizzo è molto simile a quello di FastQC (anche Trimmomatic è scritto in Java) e necessita come input le sequenze grezze. Per ogni file di input (nel nostro caso 2 file) verranno creati 2 file di output, uno indicato come paired, l'altro come unpaired; è necessario indicare il nome di ciascuno dei file di output. Le opzioni di Trimmomatic sono:
+
+* `PE` indica che lavoriamo su file paired-end
+* `-trimlog` indica che vogliamo salvare un file di log
+* `-threads` indica il numero di processori che vogliamo utilizzare per lanciare il programma
+* `ILLUMINACLIP:ALL_ADAPTERS.fa:2:30:10` è la parte che indica la rimozione degli adattatori. Il file *ALL_ADAPTERS.fa* è il file in formato fasta che contiene la sequenza degli adattatori maggiormente utilizzati
+* `LEADING:16` indica la rimozione di N basi in testa alla sequenza, sotto la qualità indicata
+* `TRAILING:16` indica la rimozione di N basi in coda alla sequenza, sotto la qualità indicata
+* `SLIDINGWINDOW:4:25` effettua un trimming basato su una "finestra"" di basi, rimuovendo le basi nel momento in cui la qualità media per quella finestra scende sotto la qualità indicata
+* `MINLEN:36` indica la rimozione delle reads che sono più corte della lunghezza indicata
+
+```{r, engine = 'bash', eval = F}
+# ci spostiamo nella cartella tc, creiamo nuova cartella e scarichiamo il programma
+# usiamo percorso assoluto da qualsiasi punto del computer per spostarci dentro una qualsiasi cartella
+cd /home/usr/Scaricati/tc # usr è specifico per il vostro utente (il mio è dlfptr70)
+mkdir Trimmomatic
+wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.36.zip -O Trimmomatic/Trimmomatic-0.36.zip # con l'opzione -O specifichiamo dove vogliamo scaricare il file e con che nome
+# decomprimiamo senza cambiare cartella e rimuoviamo l'archivio
+unzip Trimmomatic/Trimmomatic-0.36.zip -d Trimmomatic/ && rm Trimmomatic/Trimmomatic-0.36.zip
+# controlliamo il funzionamento del programma
+java -jar Trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar -h # -h è l'opzione per help
+```
+
+A questo punto possiamo lanciare Trimmomatic sui nostri file; anche se dal controllo qualità non abbiamo identificato sequenze di adattatori come contaminanti, un classico approccio potrebbe essere quello di dare come input di file degli adattatori il file fornito dal programma che quindi rimuoverà tutte le sequenze corrispondenti a quelle che trova
+
+```{r, engine = 'bash', eval = F}
+# creiamo file unendo in uno tutti gli adattatori
+cat Trimmomatic/Trimmomatic-0.36/adapters/*.fa > Trimmomatic/Trimmomatic-0.36/adapters/ALL_ADAPTERS.fa
+# cat è un comando che unisce file "row-wise"; l'asterisco (*.fa) indica di selezionare tutti i file che hanno estensione .fa
+java -jar Trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 10 -trimlog \
+Trimmomatic/log_trimmomatic \
+Sample_Untreated_1_1_subset.fastq.gz Sample_Untreated_1_2_subset.fastq.gz \
+Trimmomatic/Sample_Untreated_1_1_subset_trim_paired.fastq.gz Trimmomatic/Sample_Untreated_1_1_subset_trim_unpaired.fastq.gz \
+Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz Trimmomatic/Sample_Untreated_1_2_subset_trim_unpaired.fastq.gz \
+ILLUMINACLIP:Trimmomatic/Trimmomatic-0.36/adapters/ALL_ADAPTERS.fa:2:30:10 \
+LEADING:16 TRAILING:16 SLIDINGWINDOW:4:25 MINLEN:36 &> Trimmomatic/log_trimmomatic_screen
+# con il simbolo &> andiamo a salvare su un file anche l'output che normalmente sarebbe stampato sullo schermo
+```
+
+Dovrebbe terminare dopo qualche secondo senza aver stampato a schermo alcuna informazione. Andiamo a vedere se ha creato i file ed esaminiamo i file di log (log_trimmomatic e log_trimmomatic_screen); il primo contiene le seguenti info per ciascuna read:
+
+* the read name
+* the surviving sequence length
+* the location of the first surviving base, aka. the amount trimmed from the start
+* the location of the last surviving base in the original read
+* the amount trimmed from the end
+
+Il secondo contiene le statistiche generali
+
+```{r, engine = 'bash', eval = F}
+# guardiamo prima le statistiche generali
+less -S Trimmomatic/log_trimmomatic_screen
+# poi l'altro file
+less -S Trimmomatic/log_trimmomatic
+```
+
+A questo punto ripetiamo il controllo di qualità, questa volta sulle reads trimmate, solo sui file paired
+
+```{r, engine = 'bash', eval = F}
+# creiamo cartella dove salveremo nuovo controllo qualità
+mkdir fastqc/results_after_trimming
+# lanciamo FastQC sulle sequenze trimmate
+./fastqc/FastQC/fastqc Trimmomatic/Sample_Untreated_1_1_subset_trim_paired.fastq.gz \
+Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz -o fastqc/results_after_trimming/
+```
+
+Andiamo ad esplorare i report e vedere se le statistiche sulla qualità sono cambiate
+
+
+
+
+
+
+
+
+
+
+
