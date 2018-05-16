@@ -276,7 +276,7 @@ ls -rht STAR/aligned/
 less -S STAR/aligned/SU_1_Log.final.out
 ```
 
-Quanto vi risulta la percentuale di Uniquely mapped reads?
+***Quanto vi risulta la percentuale di Uniquely mapped reads?***
 
 ### ALIGNMENT VISUALIZATION
 
@@ -295,4 +295,14 @@ A questo punto potete tornare su IGV e cliccare su "File -> Load from file" e se
 
 ![Non sarà così facile trovare un po' di reads!](images/igv_2.png)
 
+Nel caso non funzionasse, copiare dal server alla vostra cartella, sia il file `.bam` che il `.bai` (potrebbe essere che il bai debba essere creato dallo stesso bam per funzionare la visualizzazione)
+
+```{r, engine = 'bash', eval = F}
+# bam
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.sortedByCoord.out.bam STAR/aligned/
+# bai
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.sortedByCoord.out.bam.bai STAR/aligned/
+```
+
+***La lunghezza degli introni è stata rispettata?***
 
