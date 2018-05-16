@@ -174,12 +174,83 @@ Andiamo ad esplorare i report e vedere se le statistiche sulla qualità sono cam
 
 ### MAPPING (ALLINEAMENTO)
 
-Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (*Arabidopsis*). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell'indice del genoma. Perché viene creato l'indice del genoma: citazione presa da qualcuno ma non ricordo chi
+Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (*Arabidopsis*). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell'indice del genoma. Perché viene creato l'indice del genoma: citazione presa da qualcuno ma non ricordo chi (modificata) "*Se entro in una biblioteca con la frase "La genetica è il ramo della biologia che si occupa del materiale ereditario" e voglio trovare il libro in cui è scritta, farò molta fatica a trovarlo, a meno che all'ingresso della biblioteca non si trovi un catalogo che mi indirizza almeno verso la sezione "Scienza"*". L'indice quindi consiste in una serie di file che riassumono le principali caratteristiche del genoma di un organismo. Per effettuare l'allineamento useremo un programma chiamato *STAR* (https://github.com/alexdobin/STAR). Andiamo a scaricarlo insieme ai file aggiornati del genoma e del trascrittoma di *Arabidopsis*
 
+```{r, engine = 'bash', eval = F}
+# siamo nella cartella tc
+mkdir STAR
+# scarichiamo e salviamo nella cartella appena creata
+wget https://github.com/alexdobin/STAR/archive/2.6.0c.tar.gz -O STAR/2.6.0c.tar.gz
+# decomprimiamo e rimuoviamo archivio
+tar -xf STAR/2.6.0c.tar.gz -C STAR/ && rm 2.6.0c.tar.gz
+# controlliamo il funzionamento
+./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR -h
+```
 
+Per creare l'indice del genoma, abbiamo bisogno del genoma. Andiamo a scaricarlo dal sito di **Ensembl Plants**
 
+```{r, engine = 'bash', eval = F}
+# genoma
+mkdir genome
+wget ftp://ftp.ensemblgenomes.org/pub/release-39/plants/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz -O genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
+# trascrittoma
+wget ftp://ftp.ensemblgenomes.org/pub/release-39/plants/gtf/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.39.gtf.gz -O Arabidopsis_thaliana.TAIR10.39.gtf.gz
+# i file devono essere decompressi
+gunzip genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
+gunzip genome/Arabidopsis_thaliana.TAIR10.39.gtf.gz
+```
 
+A questo punto possiamo creare l'indice con il comando di STAR `--runMode genomeGenerate`. Vediamo nel dettaglio le altre opzioni:
 
+* `./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR` chiamiamo il programma
+* `--runThreadN` numero di threads con cui vogliamo lanciare il programma
+* `--runMode` indica che vogliamo creare l'indice
+* `--genomeDir` indica la cartella dove vogliamo che venga salvato l'output
+* `--genomeFastaFiles` cartella dove è presente il file del genoma
+* `--sjdbGTFfile` indichiamo che vogliamo usare anche il trascrittoma per aiutarlo nella creazione dell'indice
+* `--sjdbOverhang` specifica la lunghezza delle reads meno 1. Serve per creare il database delle giunzioni di splicing
+
+Lanciamo il comando con le opzioni e i percorsi adattati al nostro caso
+
+```{r, engine = 'bash', eval = F}
+# creiamo cartella per l'indice all'interno della cartella del genoma
+mkdir -p genome/index
+# lanciamo la creazione dell'indice
+./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR \
+--runThreadN 10 \
+--runMode genomeGenerate \
+--genomeDir genome/index \
+--genomeFastaFiles genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa \
+--sjdbGTFfile genome/Arabidopsis_thaliana.TAIR10.39.gtf \
+--sjdbOverhang 100
+```
+
+Con 10 core dovrebbe impiegare circa 3 minuti. Andiamo a vedere se ha creato i file nella cartella `index`
+
+```{r, engine = 'bash', eval = F}
+# spostiamo il file Log.out dove dovrebbe stare
+mv Log.out genome/index/
+# guardiamo i file appena creati
+ls -lrht/genome/index
+# raccolgono diverse statistiche sul genoma di Arabidopsis, comprese info sul db di splicejunctions
+```
+
+Possiamo ora andare ad effettuare l'allineamento. Ovviamente per l'allineamento useremo le reads trimmate e pulite. Vediamo nel dettaglio i comandi:
+
+* `./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR` chiamiamo il programma
+* `--runThreadN` numero di threads con cui vogliamo lanciare il programma
+* `--genomeDir` dove sta la cartella con l'indice
+* `--readFilesIn` qui scriviamo il percorso e il nome dei campioni da mappare
+* `--readFilesCommand` qual è il formato di comrpessione dei file da mappare
+* `--outFileNamePrefix` percorso e prefisso che vogliamo assegnare ai file di output
+* `--alignIntronMax` lunghezza massima (stimata) degli introni del nostro organismo
+* `--outSAMtype` tipo es estensione del file di output
+
+Attenzione che la maggior parte dei programmi di allineamento sono creati con impostazioni di default basate sul genoma umano --> aggiustare i parametri sulla base del proprio organismo! Andiamo a lanciare il comando
+
+```{r, engine = 'bash', eval = F}
+
+```
 
 
 

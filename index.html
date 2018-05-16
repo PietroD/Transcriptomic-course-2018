@@ -201,7 +201,64 @@ Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz -o fastqc/results_a
 </div>
 <div id="mapping-allineamento" class="section level3">
 <h3>MAPPING (ALLINEAMENTO)</h3>
-<p>Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (<em>Arabidopsis</em>). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell’indice del genoma. Perché viene creato l’indice del genoma: citazione presa da qualcuno ma non ricordo chi</p>
+<p>Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (<em>Arabidopsis</em>). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell’indice del genoma. Perché viene creato l’indice del genoma: citazione presa da qualcuno ma non ricordo chi (modificata) “<em>Se entro in una biblioteca con la frase “La genetica è il ramo della biologia che si occupa del materiale ereditario” e voglio trovare il libro in cui è scritta, farò molta fatica a trovarlo, a meno che all’ingresso della biblioteca non si trovi un catalogo che mi indirizza almeno verso la sezione “Scienza”</em>”. L’indice quindi consiste in una serie di file che riassumono le principali caratteristiche del genoma di un organismo. Per effettuare l’allineamento useremo un programma chiamato <em>STAR</em> (<a href="https://github.com/alexdobin/STAR" class="uri">https://github.com/alexdobin/STAR</a>). Andiamo a scaricarlo insieme ai file aggiornati del genoma e del trascrittoma di <em>Arabidopsis</em></p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># siamo nella cartella tc</span>
+<span class="fu">mkdir</span> STAR
+<span class="co"># scarichiamo e salviamo nella cartella appena creata</span>
+<span class="fu">wget</span> https://github.com/alexdobin/STAR/archive/2.6.0c.tar.gz -O STAR/2.6.0c.tar.gz
+<span class="co"># decomprimiamo e rimuoviamo archivio</span>
+<span class="fu">tar</span> -xf STAR/2.6.0c.tar.gz -C STAR/ <span class="kw">&amp;&amp;</span> <span class="fu">rm</span> 2.6.0c.tar.gz
+<span class="co"># controlliamo il funzionamento</span>
+<span class="ex">./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR</span> -h</code></pre></div>
+<p>Per creare l’indice del genoma, abbiamo bisogno del genoma. Andiamo a scaricarlo dal sito di <strong>Ensembl Plants</strong></p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># genoma</span>
+<span class="fu">mkdir</span> genome
+<span class="fu">wget</span> ftp://ftp.ensemblgenomes.org/pub/release-39/plants/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz -O genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
+<span class="co"># trascrittoma</span>
+<span class="fu">wget</span> ftp://ftp.ensemblgenomes.org/pub/release-39/plants/gtf/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.39.gtf.gz -O Arabidopsis_thaliana.TAIR10.39.gtf.gz
+<span class="co"># i file devono essere decompressi</span>
+<span class="fu">gunzip</span> genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
+<span class="fu">gunzip</span> genome/Arabidopsis_thaliana.TAIR10.39.gtf.gz</code></pre></div>
+<p>A questo punto possiamo creare l’indice con il comando di STAR <code>--runMode genomeGenerate</code>. Vediamo nel dettaglio le altre opzioni:</p>
+<ul>
+<li><code>./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR</code> chiamiamo il programma</li>
+<li><code>--runThreadN</code> numero di threads con cui vogliamo lanciare il programma</li>
+<li><code>--runMode</code> indica che vogliamo creare l’indice</li>
+<li><code>--genomeDir</code> indica la cartella dove vogliamo che venga salvato l’output</li>
+<li><code>--genomeFastaFiles</code> cartella dove è presente il file del genoma</li>
+<li><code>--sjdbGTFfile</code> indichiamo che vogliamo usare anche il trascrittoma per aiutarlo nella creazione dell’indice</li>
+<li><code>--sjdbOverhang</code> specifica la lunghezza delle reads meno 1. Serve per creare il database delle giunzioni di splicing</li>
+</ul>
+<p>Lanciamo il comando con le opzioni e i percorsi adattati al nostro caso</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># creiamo cartella per l'indice all'interno della cartella del genoma</span>
+<span class="fu">mkdir</span> -p genome/index
+<span class="co"># lanciamo la creazione dell'indice</span>
+<span class="ex">./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR</span> \
+--runThreadN 10 \
+--runMode genomeGenerate \
+--genomeDir genome/index \
+--genomeFastaFiles genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa \
+--sjdbGTFfile genome/Arabidopsis_thaliana.TAIR10.39.gtf \
+--sjdbOverhang 100</code></pre></div>
+<p>Con 10 core dovrebbe impiegare circa 3 minuti. Andiamo a vedere se ha creato i file nella cartella <code>index</code></p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># spostiamo il file Log.out dove dovrebbe stare</span>
+<span class="fu">mv</span> Log.out genome/index/
+<span class="co"># guardiamo i file appena creati</span>
+<span class="fu">ls</span> -lrht/genome/index
+<span class="co"># raccolgono diverse statistiche sul genoma di Arabidopsis, comprese info sul db di splicejunctions</span></code></pre></div>
+<p>Possiamo ora andare ad effettuare l’allineamento. Ovviamente per l’allineamento useremo le reads trimmate e pulite. Vediamo nel dettaglio i comandi:</p>
+<ul>
+<li><code>./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR</code> chiamiamo il programma</li>
+<li><code>--runThreadN</code> numero di threads con cui vogliamo lanciare il programma</li>
+<li><code>--genomeDir</code> dove sta la cartella con l’indice</li>
+<li><code>--readFilesIn</code> qui scriviamo il percorso e il nome dei campioni da mappare</li>
+<li><code>--readFilesCommand</code> qual è il formato di comrpessione dei file da mappare</li>
+<li><code>--outFileNamePrefix</code> percorso e prefisso che vogliamo assegnare ai file di output</li>
+<li><code>--alignIntronMax</code> lunghezza massima (stimata) degli introni del nostro organismo</li>
+<li><code>--outSAMtype</code> tipo es estensione del file di output</li>
+</ul>
+<p>Attenzione che la maggior parte dei programmi di allineamento sono creati con impostazioni di default basate sul genoma umano –&gt; aggiustare i parametri sulla base del proprio organismo! Andiamo a lanciare il comando</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"></code></pre></div>
 </div>
 </section>
 
