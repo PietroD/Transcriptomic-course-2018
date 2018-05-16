@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### RAW READS MANIPULATION
 
-Accendere il computer e aprire il terminale (ctrl + alt + canc)
+Accendere il computer e aprire il terminale (ctrl + alt + T)
 
 ![](images/ubuntu_terminal.png)
 
@@ -235,7 +235,7 @@ ls -lrht/genome/index
 # raccolgono diverse statistiche sul genoma di Arabidopsis, comprese info sul db di splicejunctions
 ```
 
-Possiamo ora andare ad effettuare l'allineamento. Ovviamente per l'allineamento useremo le reads trimmate e pulite. Vediamo nel dettaglio i comandi:
+Possiamo ora andare ad effettuare l'allineamento. Ovviamente per l'allineamento useremo le reads trimmate e pulite (le paired). Vediamo nel dettaglio i comandi:
 
 * `./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR` chiamiamo il programma
 * `--runThreadN` numero di threads con cui vogliamo lanciare il programma
@@ -249,9 +249,50 @@ Possiamo ora andare ad effettuare l'allineamento. Ovviamente per l'allineamento 
 Attenzione che la maggior parte dei programmi di allineamento sono creati con impostazioni di default basate sul genoma umano --> aggiustare i parametri sulla base del proprio organismo! Andiamo a lanciare il comando
 
 ```{r, engine = 'bash', eval = F}
-
+# creiamo cartella dove salveremo file di allineamento
+mkdir -p STAR/aligned
+# lanciamo l'allineamento
+./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR \
+--runThreadN 10 \
+--genomeDir genome/index/ \
+--readFilesIn Trimmomatic/Sample_Untreated_1_1_subset_trim_paired.fastq.gz \
+Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz \
+--readFilesCommand zcat \
+--outFileNamePrefix STAR/aligned/SU_1_ \
+--alignIntronMax 2000 \
+--outSAMtype BAM SortedByCoordinate
 ```
 
+Se è tutto a posto l'allineamento dovrebbe impiegare circa 10 secondi. Come vedete la lunghezza massima media per gli introni di *Arabidopsis* è di circa 2000 bp, e gli ho detto che voglio che il file di output sia in formato `.bam` (formato allineamento binario). Il file .bam è in un formato che non può essere aperto con il terminale, ma che andremo poi a visualizzare con un apposito software. Per completezza vi inserisco un immagine dello stesso file di allineamento ma in un formato visualizzabile e consultabile sul terminale. Il formato di questo file è `.sam` (Sequence Alignment Format), formato non molto utilizzato perché non essendo compresso occupa molto spazio
 
+![SAM file](images/sam_format.png)
+
+Andiamo ora a vedere i nostri file creati
+
+```{r, engine = 'bash', eval = F}
+# il file che ci interessa è chiamato SU_1_Aligned.sortedByCoord.out.bam
+ls -rht STAR/aligned/
+# leggiamo qualche statistica in questo altro file
+less -S STAR/aligned/SU_1_Log.final.out
+```
+
+Quanto vi risulta la percentuale di Uniquely mapped reads?
+
+### ALIGNMENT VISUALIZATION
+
+Dopo aver effettuato l'allineamento può essere utile effettuare un controllo visivo sull reads allineate. A tal fine si utilizza spesso un software chiamato **IGV** (http://software.broadinstitute.org/software/igv/) che permette tra le altre cose di visualizzare i file dell'allineamento dopo aver caricato un genoma di riferimento
+
+![Integrative Genomics Viewer](images/igv.png)
+
+Andiamo a scaricare il programma dal sito http://software.broadinstitute.org/software/igv/download cliccando in basso su "Launch with 2 GB". Attendiamo lo scaricamento e apriamo il programma con doppio clic. Una volta aperto in alto a sinistra selezionare il genoma di *A. thaliana TAIR10*. A questo punto possiamo caricare i risultati del nostro allineamento, non prima però di aver creato un indice per il file `.bam`. Un altro indice direte voi, sì questa volta però non eseguiremo nessun passaggio ma vi farò prelevare il file dell'indice già preparato dal nostro server. Su questi computer non possiamo installare il programma che si utilizza, tra le altre cose, anche per la creazione degli indici per i file di allineamento. Il programma si chiama **Samtools** (http://www.htslib.org/) ed è molto utilizzato in bioinformatica perché svolge numerose funzioni. Andiamo a copiare nella cartella dove sta il file `.bam` appena creato da noi, il file dell'indice, che permette che il file `.bam` venga visualizzato correttamente in **IGV**
+
+```{r, engine = 'bash', eval = F}
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.sortedByCoord.out.bam.bai STAR/aligned/
+# il file che vedete deve avere lo stesso nome del file di allineamento, ma ha un'estensione diversa, .bai
+```
+
+A questo punto potete tornare su IGV e cliccare su "File -> Load from file" e selezionare dalla cartella `aligned` il file SU_1_Aligned.sortedByCoord.out.bam. Selezioniamo Chr1 e zoomiamo sino a che la rotella inizia a girare, a quel punto possiamo visualizzare le nostre reads allineate ai geni del genoma di riferimento
+
+![Non sarà così facile trovare un po' di reads!](images/igv_2.png)
 
 
