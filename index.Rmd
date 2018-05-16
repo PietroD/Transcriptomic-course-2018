@@ -1,5 +1,5 @@
 ---
-title: "Trascrittomica 2018"
+title: "RNA-Seq Data Analysis 2018"
 author: "Pietro Delfino"
 date: "`r format (Sys.Date())`"
 output:
@@ -11,6 +11,9 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+### OVERVIEW OF MAIN STEPS IN RNA-Seq DATA ANALYSIS
+(da inserire tabella)
 
 ### RAW READS MANIPULATION
 
@@ -284,7 +287,13 @@ Dopo aver effettuato l'allineamento può essere utile effettuare un controllo vi
 
 ![Integrative Genomics Viewer](images/igv.png)
 
-Andiamo a scaricare il programma dal sito http://software.broadinstitute.org/software/igv/download cliccando in basso su "Launch with 2 GB". Attendiamo lo scaricamento e apriamo il programma con doppio clic. Una volta aperto in alto a sinistra selezionare il genoma di *A. thaliana TAIR10*. A questo punto possiamo caricare i risultati del nostro allineamento, non prima però di aver creato un indice per il file `.bam`. Un altro indice direte voi, sì questa volta però non eseguiremo nessun passaggio ma vi farò prelevare il file dell'indice già preparato dal nostro server. Su questi computer non possiamo installare il programma che si utilizza, tra le altre cose, anche per la creazione degli indici per i file di allineamento. Il programma si chiama **Samtools** (http://www.htslib.org/) ed è molto utilizzato in bioinformatica perché svolge numerose funzioni. Andiamo a copiare nella cartella dove sta il file `.bam` appena creato da noi, il file dell'indice, che permette che il file `.bam` venga visualizzato correttamente in **IGV**
+Andiamo a scaricare il programma dal sito http://software.broadinstitute.org/software/igv/download cliccando in basso su "Launch with 2 GB". Attendiamo lo scaricamento e apriamo il programma con doppio clic. Una volta aperto in alto a sinistra selezionare il genoma di *A. thaliana TAIR10*. A questo punto possiamo caricare i risultati del nostro allineamento, non prima però di aver creato un indice per il file `.bam`. Un altro indice direte voi, sì questa volta però non eseguiremo nessun passaggio ma vi farò prelevare il file dell'indice già preparato dal nostro server. Per completezza vi mostro il comando utilizzato per creare l'indice con Samtools
+
+```{r, engine = 'bash', eval = F}
+samtools index -b SU_1_Aligned.sortedByCoord.out.bam
+```
+
+Su questi computer non possiamo installare il programma che si utilizza, tra le altre cose, anche per la creazione degli indici per i file di allineamento. Il programma si chiama **Samtools** (http://www.htslib.org/) ed è molto utilizzato in bioinformatica perché svolge numerose funzioni. Andiamo a copiare nella cartella dove sta il file `.bam` appena creato da noi, il file dell'indice, che permette che il file `.bam` venga visualizzato correttamente in **IGV**
 
 ```{r, engine = 'bash', eval = F}
 scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.sortedByCoord.out.bam.bai STAR/aligned/
@@ -305,4 +314,59 @@ scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.so
 ```
 
 ***La lunghezza degli introni è stata rispettata?***
+
+### READS COUNTING
+
+Una volta controllato che l'allineamento è andato a buon fine e siamo soddisfatti di come il programma di mapping ha lavorato, possiamo spostarci nel prossimo step verso l'analisi dei geni, ovvero la conta delle reads. Per conta delle reads si intende il contare quante reads sono state assegnate (hanno "mappato") a un determinato gene (o trascritto, o esone, le cosiddette *genomic features*) in seguito al mapping. Per questo passaggio utilizzeremo il software **featureCounts** (http://subread.sourceforge.net/) del pacchetto **Subread**. Scarichiamo e testiamo il programma
+
+```{r, engine = 'bash', eval = F}
+# creiamo cartella
+mkdir featureCounts
+# scarichiamo dal server
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/featureCounts featureCounts/
+# testiamo funzionamento
+./featureCounts/featureCounts -v
+```
+
+Vediamo le opzioni e i parametri di featureCounts:
+
+* `featureCounts` lanciamo il programma
+* `-a` forniamo il file di annotazione del trascrittoma
+* `-o` percorso e nome file di output
+* `-p` indichiamo che lavoriamo su reads paired e che verranno contati i frammenti e non le reads
+* `-t` indica quale feature contare
+* `-g` indica che vogliamo raggrppare tutte le feature in questa meta-feature
+* `-T` quanti threads vogliamo usare per correre il programma
+* `in.bam` nome del file di allineamento che vogliamo come input
+
+A questo punto andiamo a lanciare il programma, ricordandoci che nel nostro caso vogliamo contare le feature del file di allineamento `.bam`
+
+```{r, engine = 'bash', eval = F}
+# creiamo cartella per output
+mkdir -p featureCounts/output
+# lanciamo la conta
+./featureCounts/featureCounts \
+-a genome/Arabidopsis_thaliana.TAIR10.39.gtf \
+-o featureCounts/output/SU_1_counts.txt \
+-p \
+-t exon \
+-g gene_id \
+-T 10 \
+STAR/aligned/SU_1_Aligned.sortedByCoord.out.bam
+```
+
+Dovrebbe terminare in qualche secondo. Andiamo ad esplorare i file di output
+
+```{r, engine = 'bash', eval = F}
+ls -lrht featureCounts/output/
+less -S featureCounts/output/SU_1_counts.txt.summary
+less -S featureCounts/output/SU_1_counts.txt
+```
+
+Le colonne che ci interessano sono la prima e l'ultima (7)
+
+
+
+
+
 
