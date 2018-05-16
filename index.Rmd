@@ -12,9 +12,9 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Manipolazione delle reads grezze e controllo qualità
+### RAW READS MANIPULATION
 
-Accendere il computer e aprire il terminale
+Accendere il computer e aprire il terminale (ctrl + alt + canc)
 
 ![](images/ubuntu_terminal.png)
 
@@ -22,15 +22,13 @@ Spostarsi nella cartella `Scaricati`, create una nuova cartella chiamandola `tc`
 
 ```{r, engine = 'bash', eval = F}
 cd Scaricati/
-
 mkdir tc
 ```
 
 Entrare nella cartella appena creata e valutarne il contenuto della cartella digitare il seguente comando
 
-```{r, engine = 'bash', eval = T}
-cd Scaricati/tc/
-
+```{r, engine = 'bash', eval = F}
+cd tc/
 ls -lrth
 ```
 
@@ -39,8 +37,7 @@ La cartella dovrebbe essere vuota. Come prima cosa dobbiamo recuperare i file gr
 ```{r, engine = 'bash', eval = F}
 # prima scarichiamo il primo file (attenzione al punto in fondo al comando, indica current directory)
 scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/Sample_Untreated_1_1_subset.fastq.gz .
-# inserire la password quando ce la chiede (trascrittomica2017)
-
+# inserire la password quando ce la chiede ()
 # controlliamo che sia stato scaricato
 ls -lrth
 # ora scarichiamo il secondo file
@@ -63,6 +60,8 @@ zcat Sample_Untreated_1_2_subset.fastq.gz | echo $((`wc -l`/4))
 # il numero di reads F e R coincide?
 ```
 
+### QUALITY CONTROL
+
 Per effettuare il controllo di qualità sulle nostre reads utilizzeremo il programma **FastQC** (http://www.bioinformatics.babraham.ac.uk/projects/fastqc/). Questo software (scritto in Java) prende come input un numero a piacimento di reads e calcola varie statistiche che possono dare un'idea della qualità dei nostri dati
 
 ```{r, engine = 'bash', eval = F}
@@ -79,16 +78,15 @@ rm fastqc_v0.11.7.zip
 ls -lrth FastQC/
 # il file che ci interessa, cioè il programma che andremo a richiamare è "fastqc"
 # dobbiamo prima renderlo eseguibile
-chmod 755 fastqc
+chmod 755 FastQC/fastqc
 # controlliamo che funzioni
-./fastcq -h
+./FastQC/fastcq -h
 ```
 
 A questo punto possiamo lanciare il programma dando come input i due file con le reads F e R. Il comando è molto semplice, basta specificare i nomi dei file che vogliamo controllare, e la cartella dove vogliamo che vengano salvati i report coi risultati (la cartella deve già esistere quindi prima la creiamo)
 
 ```{r, engine = 'bash', eval = F}
-# torniamo indietro alla cartella fastqc e creiamo cartella per salvare i risultati
-cd ..
+# creiamo cartella per salvare i risultati
 mkdir results
 # ci spostiamo una cartella su, dove stanno i nostri file
 cd ..
@@ -174,7 +172,9 @@ Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz -o fastqc/results_a
 
 Andiamo ad esplorare i report e vedere se le statistiche sulla qualità sono cambiate
 
+### MAPPING (ALLINEAMENTO)
 
+Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (*Arabidopsis*). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell'indice del genoma. Perché viene creato l'indice del genoma: citazione presa da qualcuno ma non ricordo chi
 
 
 
