@@ -12,10 +12,12 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-
+<div style="margin-bottom:50px;">
+</div>
 ## OVERVIEW
-![](images/rna_seq_workflow.png)
-
+![Credits: Hands-on Training in RNA-Seq Data Analysis. I-Hsuan Lin. National Yang-Ming University, Taipei, Taiwan](images/rna_seq_workflow.png)
+<div style="margin-bottom:50px;">
+</div>
 ## OUR WORKFLOW
 
 PASSAGGIO|SOFTWARE|FORMATO FILE INPUT|FORMATO FILE OUTPUT|FILE SUPPLEMENTARI
@@ -28,7 +30,8 @@ Controllo qualità allineamento (opzionale)|Qualimap|.bam|Output tabulare|
 Conta delle reads|featureCounts|.sam / .bam|.txt (testo)|File GTF dell’annotazione|
 Analisi geni differenzialmente espressi|DESeq2 / edgeR (pacchetti R, Bioconductor)|.txt (testo)|.txt / .csv (qualsiasi formato tabulare)|Tabella con disegno sperimentale|
 Data mining, Gene Ontology Enrichment Analysis (GOEA)|biomaRt, clusterprofiler|oggetti R derivati da analisi DE|grafici|
-
+<div style="margin-bottom:50px;">
+</div>
 ### RAW READS MANIPULATION
 
 Accendere il computer e aprire il terminale (ctrl + alt + T)
