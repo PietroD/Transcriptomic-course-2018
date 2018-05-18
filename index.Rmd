@@ -13,8 +13,21 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### OVERVIEW
-(da inserire tabella)
+## OVERVIEW
+![](images/rna_seq_workflow.png)
+
+## OUR WORKFLOW
+
+PASSAGGIO|SOFTWARE|FORMATO FILE INPUT|FORMATO FILE OUTPUT|FILE SUPPLEMENTARI
+---------|--------|------------------|-------------------|------------------
+Controllo qualità delle reads|FastQC|.fastq (.fq; compresso: .fq.gz)|.fastq (.fq; compresso: .fq.gz)|
+Rimozione adattatori e pulizia basata su qualità|Trimmomatic|.fastq (.fq; compresso: .fq.gz)|.fastq (.fq; compresso: .fq.gz)|File fasta con sequenze adattatori|
+Mappaggio delle reads|STAR|.fastq (.fq; compresso: .fq.gz)|.sam / .bam (compresso)|File fasta del genoma e file GTF dell’annotazione|
+Visualizzazione reads mappate|IGV (Integrative Genomics Viewer)|.bam (indicizzato .bai)|Nessun output|File del genoma e annotazione (già disponibile su IGV)|
+Controllo qualità allineamento (opzionale)|Qualimap|.bam|Output tabulare|
+Conta delle reads|featureCounts|.sam / .bam|.txt (testo)|File GTF dell’annotazione|
+Analisi geni differenzialmente espressi|DESeq2 / edgeR (pacchetti R, Bioconductor)|.txt (testo)|.txt / .csv (qualsiasi formato tabulare)|Tabella con disegno sperimentale|
+Data mining, Gene Ontology Enrichment Analysis (GOEA)|biomaRt, clusterprofiler|oggetti R derivati da analisi DE|grafici|
 
 ### RAW READS MANIPULATION
 
