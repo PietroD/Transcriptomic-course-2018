@@ -6,13 +6,14 @@ output:
   prettydoc::html_pretty:
     theme: cayman
     highlight: github
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### OVERVIEW OF MAIN STEPS IN RNA-Seq DATA ANALYSIS
+### OVERVIEW
 (da inserire tabella)
 
 ### RAW READS MANIPULATION
@@ -105,7 +106,7 @@ A questo punto commentiamo insieme i risultati del controllo qualità confrontan
 
 Dopo aver deciso insieme quali parametri utilizzare per correggere la qualità delle nostre reads ed aver identificato gli adattatori da rimuovere, andiamo ad effettuare la rimozione degli adattatori e il quality trimming
 
-### Adapters removal and quality trimming
+### ADAPTERS REMOVAL AND QUALITY TRIMMING
 
 Per effettuare queste due operazioni useremo un unico programma che si chiama **Trimmomatic** (http://www.usadellab.org/cms/?page=trimmomatic). Il suo utilizzo è molto simile a quello di FastQC (anche Trimmomatic è scritto in Java) e necessita come input le sequenze grezze. Per ogni file di input (nel nostro caso 2 file) verranno creati 2 file di output, uno indicato come paired, l'altro come unpaired; è necessario indicare il nome di ciascuno dei file di output. Le opzioni di Trimmomatic sono:
 
