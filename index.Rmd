@@ -14,8 +14,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 <div style="margin-bottom:50px;">
 </div>
+
 ## OVERVIEW
-![Credits: Hands-on Training in RNA-Seq Data Analysis. I-Hsuan Lin. National Yang-Ming University, Taipei, Taiwan](images/rna_seq_workflow.png)
+
+![Credits: I-Hsuan Lin, National Yang-Ming University](images/rna_seq_workflow.png)
 <div style="margin-bottom:50px;">
 </div>
 ## OUR WORKFLOW
@@ -80,6 +82,8 @@ zcat Sample_Untreated_1_2_subset.fastq.gz | echo $((`wc -l`/4))
 # il numero di reads F e R coincide?
 ```
 
+![FASTQ file](images/FASTQFormat.jpg)
+
 ### QUALITY CONTROL
 
 Per effettuare il controllo di qualità sulle nostre reads utilizzeremo il programma **FastQC** (http://www.bioinformatics.babraham.ac.uk/projects/fastqc/). Questo software (scritto in Java) prende come input un numero a piacimento di reads e calcola varie statistiche che possono dare un'idea della qualità dei nostri dati
@@ -119,6 +123,8 @@ Per ogni file di input vengono creati 2 file di output, un file html e una carte
 ![FastQC report](images/fastqc.png)
 
 A questo punto commentiamo insieme i risultati del controllo qualità confrontandoci con qualità di riferimento sul sito di FastQC e con la spiegazione dei moduli di analisi (https://www.bioinformatics.babraham.ac.uk/projects/fastqc/Help/3%20Analysis%20Modules/)
+
+![Phred quality](images/qscores.gif)
 
 Dopo aver deciso insieme quali parametri utilizzare per correggere la qualità delle nostre reads ed aver identificato gli adattatori da rimuovere, andiamo ad effettuare la rimozione degli adattatori e il quality trimming
 
@@ -192,7 +198,7 @@ Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz -o fastqc/results_a
 
 Andiamo ad esplorare i report e vedere se le statistiche sulla qualità sono cambiate
 
-### MAPPING (ALLINEAMENTO)
+### MAPPING
 
 Ora i nostri file sono pronti per essere allineati sul genoma di riferimento (*Arabidopsis*). Per quasi tutti i programmi che effettuano allineamento il primo passaggio consiste della creazione dell'indice del genoma. Perché viene creato l'indice del genoma: citazione presa da qualcuno ma non ricordo chi (modificata) "*Se entro in una biblioteca con la frase "La genetica è il ramo della biologia che si occupa del materiale ereditario" e voglio trovare il libro in cui è scritta, farò molta fatica a trovarlo, a meno che all'ingresso della biblioteca non si trovi un catalogo che mi indirizza almeno verso la sezione "Scienza"*". L'indice quindi consiste in una serie di file che riassumono le principali caratteristiche del genoma di un organismo. Per effettuare l'allineamento useremo un programma chiamato *STAR* (https://github.com/alexdobin/STAR). Andiamo a scaricarlo insieme ai file aggiornati del genoma e del trascrittoma di *Arabidopsis*
 
@@ -286,6 +292,18 @@ Trimmomatic/Sample_Untreated_1_2_subset_trim_paired.fastq.gz \
 Se è tutto a posto l'allineamento dovrebbe impiegare circa 10 secondi. Come vedete la lunghezza massima media per gli introni di *Arabidopsis* è di circa 2000 bp, e gli ho detto che voglio che il file di output sia in formato `.bam` (formato allineamento binario). Il file .bam è in un formato che non può essere aperto con il terminale, ma che andremo poi a visualizzare con un apposito software. Per completezza vi inserisco un immagine dello stesso file di allineamento ma in un formato visualizzabile e consultabile sul terminale. Il formato di questo file è `.sam` (Sequence Alignment Format), formato non molto utilizzato perché non essendo compresso occupa molto spazio
 
 ![SAM file](images/sam_format.png)
+
+La prima riga descrive il numero della versione del file
+
+Dalla seconda alla ottava sono riportate le lunghezze in paia di basi dei cromosomi di Arabidopsis
+
+La nona e la decima riga indicano il programma utilizzato per l’allineamento e il comando digitato
+
+Dalla undicesima riga ogni riga coincide con una read, le colonne sono descritte di seguito
+
+La colonna più interessante è forse la sesta (CIGAR) dove vengono specificati nel dettaglio gli allineamenti di ciascuna reads con il reference
+
+![SAM file description](images/sam_specs.png)
 
 Andiamo ora a vedere i nostri file creati
 
