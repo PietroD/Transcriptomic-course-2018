@@ -104,7 +104,7 @@ ls -lrth FastQC/
 # dobbiamo prima renderlo eseguibile
 chmod 755 FastQC/fastqc
 # controlliamo che funzioni
-./FastQC/fastcq -h
+./FastQC/fastqc -h
 ```
 
 A questo punto possiamo lanciare il programma dando come input i due file con le reads F e R. Il comando è molto semplice, basta specificare i nomi dei file che vogliamo controllare, e la cartella dove vogliamo che vengano salvati i report coi risultati (la cartella deve già esistere quindi prima la creiamo)
@@ -138,7 +138,7 @@ Per effettuare queste due operazioni useremo un unico programma che si chiama **
 * `ILLUMINACLIP:ALL_ADAPTERS.fa:2:30:10` è la parte che indica la rimozione degli adattatori. Il file *ALL_ADAPTERS.fa* è il file in formato fasta che contiene la sequenza degli adattatori maggiormente utilizzati
 * `LEADING:16` indica la rimozione di N basi in testa alla sequenza, sotto la qualità indicata
 * `TRAILING:16` indica la rimozione di N basi in coda alla sequenza, sotto la qualità indicata
-* `SLIDINGWINDOW:4:25` effettua un trimming basato su una "finestra"" di basi, rimuovendo le basi nel momento in cui la qualità media per quella finestra scende sotto la qualità indicata
+* `SLIDINGWINDOW:4:25` effettua un trimming basato su una "finestra" di basi, rimuovendo le basi nel momento in cui la qualità media per quella finestra scende sotto la qualità indicata
 * `MINLEN:36` indica la rimozione delle reads che sono più corte della lunghezza indicata
 
 ```{r, engine = 'bash', eval = F}
@@ -208,7 +208,7 @@ mkdir STAR
 # scarichiamo e salviamo nella cartella appena creata
 wget https://github.com/alexdobin/STAR/archive/2.6.0c.tar.gz -O STAR/2.6.0c.tar.gz
 # decomprimiamo e rimuoviamo archivio
-tar -xf STAR/2.6.0c.tar.gz -C STAR/ && rm 2.6.0c.tar.gz
+tar -xf STAR/2.6.0c.tar.gz -C STAR/ && rm STAR/2.6.0c.tar.gz
 # controlliamo il funzionamento
 ./STAR/STAR-2.6.0c/bin/Linux_x86_64_static/STAR -h
 ```
@@ -220,7 +220,7 @@ Per creare l'indice del genoma, abbiamo bisogno del genoma. Andiamo a scaricarlo
 mkdir genome
 wget ftp://ftp.ensemblgenomes.org/pub/release-39/plants/fasta/arabidopsis_thaliana/dna/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz -O genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
 # trascrittoma
-wget ftp://ftp.ensemblgenomes.org/pub/release-39/plants/gtf/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.39.gtf.gz -O Arabidopsis_thaliana.TAIR10.39.gtf.gz
+wget ftp://ftp.ensemblgenomes.org/pub/release-39/plants/gtf/arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.39.gtf.gz -O genome/Arabidopsis_thaliana.TAIR10.39.gtf.gz
 # i file devono essere decompressi
 gunzip genome/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa.gz
 gunzip genome/Arabidopsis_thaliana.TAIR10.39.gtf.gz
