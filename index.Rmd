@@ -257,7 +257,7 @@ Con 10 core dovrebbe impiegare circa 3 minuti. Andiamo a vedere se ha creato i f
 # spostiamo il file Log.out dove dovrebbe stare
 mv Log.out genome/index/
 # guardiamo i file appena creati
-ls -lrht/genome/index
+ls -lrht genome/index
 # raccolgono diverse statistiche sul genoma di Arabidopsis, comprese info sul db di splicejunctions
 ```
 
