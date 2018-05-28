@@ -15,6 +15,9 @@ library(DESeq2)
 library(tidyverse)
 library(pheatmap)
 library(RColorBrewer)
+library(ggrepel)
+library(clusterProfiler)
+library(org.At.tair.db)
 ```
 <div style="margin-bottom:50px;">
 </div>
@@ -448,6 +451,9 @@ Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possi
     + `install.packages("pheatmap")`
 * RColorBrewer
     + `install.packages("RColorBrewer")`
+* Genome wide annotation of Arabidopsis
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite("org.At.tair.db")`
 
 ### DIFFERENTIAL GENE EXPRESSION ANALYSIS
 #### DESEQ2
@@ -463,10 +469,12 @@ setwd("/home/usr/Scaricati/tc/featureCounts")
 library(DESeq2)
 
 # carichiamo il file
-cts <- as.matrix(read.table("featureCounts/countDF_unvs3h", sep="\t", header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"), row.names = "ID"))
+cts <- as.matrix(read.table("featureCounts/countDF_unvs3h", sep="\t",
+                            header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
+                            row.names = "ID"))
 ```
 
-```{r}
+```{r, dev="svg"}
 # non eseguire questo comando, è solo per me
 cts <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_unvs3h", sep="\t",
                            header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
@@ -504,22 +512,25 @@ dds
 # quanti erano?
 ```
 
-Data exploration with DESeq2
+**Data exploration with DESeq2**
 
-```{r}
+```{r, dev="svg"}
 library(tidyverse)
-# trasformiamo i dati per la  PCA; correggiamo per rendere dataset omoschedastico; facciamo 2 trasformazioni proprie di DESeq2, rlog e vst
+# trasformiamo i dati per la  PCA; correggiamo per rendere dataset omoschedastico
+# facciamo 2 trasformazioni proprie di DESeq2, rlog e vst
 rld <- rlog(dds, blind = FALSE)
 head(assay(rld),3)
 
 vsd <- vst(dds, blind = FALSE)
 head(assay(vsd),3)
 
-# calcoliamo PCA sui dati trasformati con rlog usando la funzione di R, dist, che calcola distanze Euclidee sulla matrice trasposa rld
+# calcoliamo PCA sui dati trasformati con rlog usando la funzione di R,
+# dist, che calcola distanze Euclidee sulla matrice trasposa rld
 sampleDists <- dist(t(assay(rld)))
 sampleDists
 
-# plottiamo heatmap delle distanze specificando noi stessi la distanza che abbiamo appena calcolato con l'argomento "clustering distance"
+# plottiamo heatmap delle distanze specificando noi stessi la distanza che abbiamo
+# appena calcolato con l'argomento "clustering distance"
 sampleDistMatrix <- as.matrix( sampleDists )
 rownames(sampleDistMatrix) <- rownames(coldata)
 colnames(sampleDistMatrix) <- rownames(coldata)
@@ -529,27 +540,177 @@ pheatmap(sampleDistMatrix,
          clustering_distance_cols = sampleDists,
          col = colors
          )
-# plottiamo PCA
-plotPCA(rld, intgroup=c("condition", "time"))
-plotPCA(vsd, intgroup=c("condition", "time"))
 
+# plottiamo PCA
 # custom PCA plot
 pcaData <- plotPCA(rld, intgroup=c("condition", "time"), returnData=TRUE)
-percentVar <- round(100 * attr(pcaData, "percentVar"))
+pcaData.vsd <- plotPCA(vsd, intgroup=c("condition", "time"), returnData=TRUE)
 
 ggplot(pcaData, aes(PC1, PC2, color=condition, shape=time)) +
+  geom_text_repel(aes(label=pcaData$name)) +
   geom_point(size=3) +
-  geom_text(aes(label=pcaData$name),hjust=0, vjust=0) +
-  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
-  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
-  coord_fixed()
+  theme_bw() +  ggtitle("Data transformed with rld")
+
+ggplot(pcaData.vsd, aes(PC1, PC2, color=condition, shape=time)) +
+  geom_text_repel(aes(label=pcaData$name)) +
+  geom_point(size=3) +
+  theme_bw() +  ggtitle("Data transformed with vsd")
 ```
 
+Dopo alcune analisi esplorative possiamo eseguire il test della differenza di espressione tra i geni vero e proprio. Teniamo presente che DESeq2 lavora sulle conte grezze per effettuare il test, e non sui dati trasformati, quindi useremo l'oggetto `dds` e non le trasformazioni `rld` o `vsd`
 
+```{r, message=F, warning=F}
+# comando che effettua l'analisi vera e propria
+dds <- DESeq(dds)
 
+# salviamo oggetto con risultati specificando quali confronti
+res <- results(dds, contrast=c("condition","treated","untreated"), alpha = 0.01)
+summary(res)
 
+# we can order our results table by the smallest p-value
+resOrdered <- res[order(res$pvalue),]
+resOrdered
+```
 
+**Volcano plot**
 
+```{r, dev="svg"}
+# Threshold on the adjusted p-value
+alpha <- 0.01
+# colors for the points
+cols <- densCols(res$log2FoldChange, -log10(res$pvalue))
+# plot
+plot(res$log2FoldChange, -log10(res$padj), col=cols, panel.first=grid(),
+     main="Volcano plot", xlab="Effect size: log2(fold-change)", ylab="-log10(adjusted p-value)",
+     pch=20, cex=0.6)
+abline(v=0)
+abline(v=c(-2,2), col="brown")
+abline(h=-log10(alpha), col="brown")
+
+#gn.selected <- abs(res$log2FoldChange) > 5 & res$padj < alpha 
+
+#text(res$log2FoldChange[gn.selected],
+#     -log10(res$padj)[gn.selected],
+#     lab=rownames(res)[gn.selected ], cex=0.4)
+```
+
+**Heatmap**
+
+```{r, dev="svg"}
+# plottiamo con una heatmap i 20 geni con maggior varianza tra le condizioni
+# sulla base della trasformazione rlog
+topVarGenes <- head(order(rowVars(assay(rld)), decreasing = TRUE), 20)
+mat  <- assay(rld)[ topVarGenes, ]
+head(mat)
+mat  <- mat - rowMeans(mat)
+head(mat)
+anno <- as.data.frame(colData(rld)[, c("condition","time")])
+pheatmap(mat, annotation_col = anno)
+```
+
+**Scatter plot delle conte**
+
+```{r, dev="svg"}
+# plottiamo le conte normalizzate del gene con il padj minore; o fold change minore
+plotCounts(dds, gene=which.min(res$padj), intgroup="condition")
+plotCounts(dds, gene=which.min(res$log2FoldChange), intgroup="condition")
+# se siamo interessati a un gene in particolare possiamo scriverne il nome
+plotCounts(dds, gene="AT1G66570", intgroup="condition")
+```
+
+### GENE ONTOLOGY ANALYSIS
+
+Gene ontology: Il discorso sull'essere dei geni
+
+![www.geneontology.org](images/GO.png)
+
+Per esplorare le gene ontology dei geni che abbiamo trovato come differenzialmente espressi utilizzeremo il pacchetto **clusterprofiler** (https://bioconductor.org/packages/release/bioc/vignettes/clusterProfiler/inst/doc/clusterProfiler.html) che abbiamo installato dal *Bioconductor*. Siamo fortunati a lavorare con *Arabidopsis* perché tra i circa 20 organismi supportati dal pacchetto abbiamo anche *Ath*. Questo pacchetto fornisce diverse possibilità e restituisce risultati sia tabulari che grafici. Inoltre permette di effettuare non solo arricchimenti ma anche classificazioni, sia per le categorie gene ontologies che per i pathway KEGG
+
+```{r, dev="svg", warning=F, message=F}
+# carichiamo la libreria
+library(clusterProfiler)
+library(org.At.tair.db)
+
+# come primo comando andiamo ad esplorare le categorie alle quali appartengono i geni upregolati con un log2FC maggiore di 4
+down <- res$log2FoldChange < 4
+res[down,]
+down <- as.data.frame(res[res$log2FoldChange < -4,])
+class(down)
+head(down)
+dim(down)
+
+# come input di  groupGO usiamo la lista dei geni, che nel nostro caso corrisponde ai nomi di riga
+# prima però dobbiamo convertire i TAIR in symbol e entrez
+keytypes(org.At.tair.db)
+
+ids.down <- bitr(rownames(down), fromType="TAIR",
+            toType=c("ENTREZID", "SYMBOL"),
+            OrgDb="org.At.tair.db")
+head(ids.down)
+```
+
+**CLASSIFICATION**
+
+```{r, dev="svg"}
+ggo <- groupGO(gene     = ids.down$ENTREZID,
+               OrgDb    =  org.At.tair.db,
+               ont      = "BP",
+               level    = 3,
+               readable = T)
+class(ggo)
+
+# plot results
+barplot(ggo, drop=TRUE, showCategory=20)
+
+# transform to df to custom plot 
+ggo.df <- as.data.frame(ggo)
+head(ggo.df)
+dim(ggo.df)
+str(ggo.df)
+
+# order levels to plot correctly
+ggo.df$Description <- factor(ggo.df$Description,levels = ggo.df$Description[order(-ggo.df$Count)])
+
+# order df and replace
+ggo.df <- ggo.df[order(-ggo.df$Count),]
+
+# plot first 50
+ggplot(ggo.df[1:50,], aes(Description, Count)) + geom_point() +
+  theme(axis.text.x=element_text(angle=90,hjust=1)) +
+  ggtitle("GO most down regulated")
+```
+
+**GO ENRICHMENT**
+
+```{r, dev="svg", warning=F, message=F}
+ego <- enrichGO(gene          = ids.down$ENTREZID,
+                OrgDb         = org.At.tair.db, 
+                ont           = "BP",
+                pAdjustMethod = "BH",
+                pvalueCutoff  = 0.01,
+                qvalueCutoff  = 0.05,
+                keyType       = 'ENTREZID',
+                readable      = TRUE)
+head(ego)
+dotplot(ego)
+#emapplot(ego)
+cnetplot(ego, categorySize="pvalue")
+#goplot(ego)
+# provate se a voi vengono questi grafici
+``` 
+
+**KEGG ENRICHMENT**
+
+```{r, dev="svg"}
+kk <- enrichKEGG(gene         = rownames(down),
+                 organism     = 'ath',
+                 pvalueCutoff = 0.05)
+head(kk)
+dotplot(kk)
+cnetplot(kk, categorySize="pvalue")
+```
+
+**Come esercizio provate a ripetere le analisi di gene ontologies sulle restanti categorie (CC, MF) per i down-regolati e su tutte le categorie per gli up-regolati, considerando sempre un log2FC > 4**
 
 
 
