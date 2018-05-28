@@ -17,7 +17,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## OVERVIEW
 
-![Credits: I-Hsuan Lin, National Yang-Ming University](images/rna_seq_workflow.png)
+![Credits I-Hsuan Lin, National Yang-Ming University](images/rna_seq_workflow.png)
+Image credits: I-Hsuan Lin, National Yang-Ming University
 <div style="margin-bottom:50px;">
 </div>
 ## OUR WORKFLOW
@@ -34,6 +35,7 @@ Analisi geni differenzialmente espressi|DESeq2 / edgeR (pacchetti R, Bioconducto
 Data mining, Gene Ontology Enrichment Analysis (GOEA)|biomaRt, clusterprofiler|oggetti R derivati da analisi DE|grafici|
 <div style="margin-bottom:50px;">
 </div>
+## DAY 1 - 22 maggio 2018
 ### RAW READS MANIPULATION
 
 Accendere il computer e aprire il terminale (ctrl + alt + T)
@@ -350,14 +352,15 @@ scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/SU_1_Aligned.so
 
 ***La lunghezza degli introni è stata rispettata?***
 
+## DAY 2 - 29 maggio 2018
 ### READS COUNTING
 
 Una volta controllato che l'allineamento è andato a buon fine e siamo soddisfatti di come il programma di mapping ha lavorato, possiamo spostarci nel prossimo step verso l'analisi dei geni, ovvero la conta delle reads. Per conta delle reads si intende il contare quante reads sono state assegnate (hanno "mappato") a un determinato gene (o trascritto, o esone, le cosiddette *genomic features*) in seguito al mapping. Per questo passaggio utilizzeremo il software **featureCounts** (http://subread.sourceforge.net/) del pacchetto **Subread**. Scarichiamo e testiamo il programma
 
 ```{r, engine = 'bash', eval = F}
-# creiamo cartella
+# nella cartella tc/ creiamo cartella
 mkdir featureCounts
-# scarichiamo dal server
+# scarichiamo dal server perché più comodo
 scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/featureCounts featureCounts/
 # testiamo funzionamento
 ./featureCounts/featureCounts -v
@@ -398,7 +401,45 @@ less -S featureCounts/output/SU_1_counts.txt.summary
 less -S featureCounts/output/SU_1_counts.txt
 ```
 
-Le colonne che ci interessano sono la prima e l'ultima (7)
+Le colonne che ci interessano sono la prima e l'ultima (7). Perché per alcuni geni abbiamo più di un valore per le colonne 2, 3, 4 e 5? I passaggi che abbiamo visto finora in una situazione normale andrebbero ripetuti per tutti i campioni che abbiamo fatto sequenziare, sino ad ottenere una matrice di conte, come l'ultimo file che abbiamo visto, per ciascun campione. Da questa matrice di conte (counts matrix) creeremo un file unico che sarà l'input per la fase successiva. Visto che nella nostra esercitazione abbiamo elaborato solo un file, vi fornirò io la counts matrix completa (6 campioni, 3 controlli e 3 trattati)
+
+### INSTALLING R AND RSTUDIO
+A questo punto abbiamo concluso la prima fase del corso che abbiamo svolto usando solamente il terminale. Per la seconda fase utilizzeremo invece il software **R** e il suo ambiente di sviluppo integrato (IDE) chiamato **RStudio**. Per prima cosa vi invito a scaricare e installare R ed RStudio seguendo le istruzioni di seguito a seconda del vostro SO:
+
+* Windows: cliccare su http://cran.mirror.garr.it/mirrors/CRAN/bin/windows/base/R-3.5.0-win.exe, attendere lo scaricamento e installare il file con estensione `.exe` appena scaricato, lasciare le impostazioni di default. Per installare RStudio andare alla pagina https://www.rstudio.com/products/rstudio/download/#download e alla voce "Installers for Supported Platforms" cliccare su "RStudio 1.1.453 - Windows Vista/7/8/10", attendere lo scaricamento e installare il file con estensione `.exe` appena scaricato, lasciare le impostazioni di default.
+
+* MacOS: cliccare su http://cran.mirror.garr.it/mirrors/CRAN/bin/macosx/R-3.5.0.pkg, attendere lo scaricamento e installare il file con estensione `.pkg` appena scaricato, lasciare le impostazioni di default. Per installare RStudio andare alla pagina https://www.rstudio.com/products/rstudio/download/#download e alla voce "Installers for Supported Platforms" cliccare su "RStudio 1.1.453 - Mac OS X 10.6+ (64-bit)", attendere lo scaricamento e installare il file con estensione `.dmg` appena scaricato, lasciare le impostazioni di default.
+
+* Linux: informazioni disponibili all'indirizzo https://medium.com/@GalarnykMichael/install-r-and-rstudio-on-ubuntu-12-04-14-04-16-04-b6b3107f7779
+
+Per qualsiasi problema possiamo scrivetemi all'indirizzo > delfino.pietro@gmail.com o possiamo vedere domani l'installazione insieme in aula, ma sarebbe meglio arrivare già con entrambi i programmi installati e alcuni pacchetti che elenco di seguito, con i rispettivi comandi per l'installazione. Aprire RStudio e nella console digitare i seguenti comandi con sfondo grigio, in ordine, uno per uno:
+
+* Bioconductor
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite()`
+* ggplot2
+    + `install.packages("ggplot2")`
+* DESeq2
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite("DESeq2")`
+* edgeR
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite("edgeR")`
+* biomaRt
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite("biomaRt")`
+* clusterProfiler
+    + `source("https://bioconductor.org/biocLite.R")`
+    + `biocLite("clusterProfiler")`
+
+
+
+
+
+
+
+
+
 
 
 
