@@ -11,6 +11,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+library(DESeq2)
 ```
 <div style="margin-bottom:50px;">
 </div>
@@ -426,8 +427,8 @@ Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possi
 * Bioconductor
     + `source("https://bioconductor.org/biocLite.R")`
     + `biocLite()`
-* ggplot2
-    + `install.packages("ggplot2")`
+* tidyverse
+    + `install.packages("tidyverse")`
 * DESeq2
     + `source("https://bioconductor.org/biocLite.R")`
     + `biocLite("DESeq2")`
@@ -448,8 +449,53 @@ Torniamo alla lezione. Apriamo RStudio e ci spostiamo nella cartella dove abbiam
 ```{r, eval=F}
 setwd("/home/usr/Scaricati/tc/featureCounts") 
 # "usr" è variabile a seconda del vostro nome utente, usate il tab per completare il percorso
-
 ```
+
+```{r, eval=F}
+# carichiamo la libreria
+library(DESeq2)
+
+# carichiamo il file
+cts <- as.matrix(read.table("featureCounts/countDF_unvs3h", sep="\t", header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"), row.names = "ID"))
+```
+
+```{r}
+# non eseguire questo comando, è solo per me
+cts <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_unvs3h", sep="\t",
+                            header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
+                            row.names = "ID"))
+# vediamo cosa abbiamo caricato
+head(cts)
+
+# creiamo oggetto per il disegno sperimentale
+coldata <- data.frame(row.names = colnames(cts))
+coldata$condition <- c(rep("untreated", 3), rep("treated", 3))
+coldata$time <- c(rep("0", 3), rep("3", 3))
+str(coldata)
+
+# convertiamo le colonna in factor per poterle usare nella formula
+coldata$condition <- as.factor(coldata$condition)
+coldata$time <- as.factor(coldata$time)
+str(coldata)
+
+# costruiamo l'oggetto DESeq
+dds <- DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ condition )
+
+# ordiniamo i livelli per usare "untreated" come confronto
+dds$condition <- relevel(dds$condition, ref = "untreated")
+
+# vediamo info sull'oggetto creato
+dds
+
+# rimuoviamo geni mai espressi
+dds <- dds [rowSums(counts(dds)) > 0, ]
+
+dds
+# quanti erano?
+```
+
 
 
 
