@@ -399,9 +399,18 @@ Dovrebbe terminare in qualche secondo. Andiamo ad esplorare i file di output
 ls -lrht featureCounts/output/
 less -S featureCounts/output/SU_1_counts.txt.summary
 less -S featureCounts/output/SU_1_counts.txt
+# vediamo solo le info che ci interessano
+cut -f 1,7 featureCounts/output/SU_1_counts.txt | sed 1d | less -S
 ```
 
 Le colonne che ci interessano sono la prima e l'ultima (7). Perché per alcuni geni abbiamo più di un valore per le colonne 2, 3, 4 e 5? I passaggi che abbiamo visto finora in una situazione normale andrebbero ripetuti per tutti i campioni che abbiamo fatto sequenziare, sino ad ottenere una matrice di conte, come l'ultimo file che abbiamo visto, per ciascun campione. Da questa matrice di conte (counts matrix) creeremo un file unico che sarà l'input per la fase successiva. Visto che nella nostra esercitazione abbiamo elaborato solo un file, vi fornirò io la counts matrix completa (6 campioni, 3 controlli e 3 trattati)
+
+```{r, engine = 'bash', eval = F}
+# scarichiamo dal server il file con le conte per i 3 controlli e i 3 trattati
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/countDF_unvs3h featureCounts/
+# vediamo il file
+less -S featureCounts/countDF_unvs3h
+```
 
 ### INSTALLING R AND RSTUDIO
 A questo punto abbiamo concluso la prima fase del corso che abbiamo svolto usando solamente il terminale. Per la seconda fase utilizzeremo invece il software **R** e il suo ambiente di sviluppo integrato (IDE) chiamato **RStudio**. Per prima cosa vi invito a scaricare e installare R ed RStudio seguendo le istruzioni di seguito a seconda del vostro SO:
@@ -412,7 +421,7 @@ A questo punto abbiamo concluso la prima fase del corso che abbiamo svolto usand
 
 * Linux: informazioni disponibili all'indirizzo https://medium.com/@GalarnykMichael/install-r-and-rstudio-on-ubuntu-12-04-14-04-16-04-b6b3107f7779
 
-Per qualsiasi problema possiamo scrivetemi all'indirizzo > delfino.pietro@gmail.com o possiamo vedere domani l'installazione insieme in aula, ma sarebbe meglio arrivare già con entrambi i programmi installati e alcuni pacchetti che elenco di seguito, con i rispettivi comandi per l'installazione. Aprire RStudio e nella console digitare i seguenti comandi con sfondo grigio, in ordine, uno per uno:
+Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possiamo vedere domani l'installazione in aula, ma sarebbe meglio arrivare già con entrambi i programmi installati e alcuni pacchetti che elenco di seguito, con i rispettivi comandi per l'installazione. Aprire RStudio e nella console digitare i seguenti comandi con sfondo grigio, in ordine, uno per uno:
 
 * Bioconductor
     + `source("https://bioconductor.org/biocLite.R")`
@@ -432,6 +441,15 @@ Per qualsiasi problema possiamo scrivetemi all'indirizzo > delfino.pietro@gmail.
     + `source("https://bioconductor.org/biocLite.R")`
     + `biocLite("clusterProfiler")`
 
+### DIFFERENTIAL GENE EXPRESSION ANALYSIS
+#### DESEQ2
+Torniamo alla lezione. Apriamo RStudio e ci spostiamo nella cartella dove abbiamo il file completo con le conte
+
+```{r, eval=F}
+setwd("/home/usr/Scaricati/tc/featureCounts") 
+# "usr" è variabile a seconda del vostro nome utente, usate il tab per completare il percorso
+
+```
 
 
 
