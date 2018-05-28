@@ -12,6 +12,9 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(DESeq2)
+library(tidyverse)
+library(pheatmap)
+library(RColorBrewer)
 ```
 <div style="margin-bottom:50px;">
 </div>
@@ -441,6 +444,10 @@ Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possi
 * clusterProfiler
     + `source("https://bioconductor.org/biocLite.R")`
     + `biocLite("clusterProfiler")`
+* pheatmap
+    + `install.packages("pheatmap")`
+* RColorBrewer
+    + `install.packages("RColorBrewer")`
 
 ### DIFFERENTIAL GENE EXPRESSION ANALYSIS
 #### DESEQ2
@@ -462,8 +469,9 @@ cts <- as.matrix(read.table("featureCounts/countDF_unvs3h", sep="\t", header=T, 
 ```{r}
 # non eseguire questo comando, è solo per me
 cts <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_unvs3h", sep="\t",
-                            header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
-                            row.names = "ID"))
+                           header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
+                           row.names = "ID"))
+
 # vediamo cosa abbiamo caricato
 head(cts)
 
@@ -496,6 +504,46 @@ dds
 # quanti erano?
 ```
 
+Data exploration with DESeq2
+
+```{r}
+library(tidyverse)
+# trasformiamo i dati per la  PCA; correggiamo per rendere dataset omoschedastico; facciamo 2 trasformazioni proprie di DESeq2, rlog e vst
+rld <- rlog(dds, blind = FALSE)
+head(assay(rld),3)
+
+vsd <- vst(dds, blind = FALSE)
+head(assay(vsd),3)
+
+# calcoliamo PCA sui dati trasformati con rlog usando la funzione di R, dist, che calcola distanze Euclidee sulla matrice trasposa rld
+sampleDists <- dist(t(assay(rld)))
+sampleDists
+
+# plottiamo heatmap delle distanze specificando noi stessi la distanza che abbiamo appena calcolato con l'argomento "clustering distance"
+sampleDistMatrix <- as.matrix( sampleDists )
+rownames(sampleDistMatrix) <- rownames(coldata)
+colnames(sampleDistMatrix) <- rownames(coldata)
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows = sampleDists,
+         clustering_distance_cols = sampleDists,
+         col = colors
+         )
+# plottiamo PCA
+plotPCA(rld, intgroup=c("condition", "time"))
+plotPCA(vsd, intgroup=c("condition", "time"))
+
+# custom PCA plot
+pcaData <- plotPCA(rld, intgroup=c("condition", "time"), returnData=TRUE)
+percentVar <- round(100 * attr(pcaData, "percentVar"))
+
+ggplot(pcaData, aes(PC1, PC2, color=condition, shape=time)) +
+  geom_point(size=3) +
+  geom_text(aes(label=pcaData$name),hjust=0, vjust=0) +
+  xlab(paste0("PC1: ",percentVar[1],"% variance")) +
+  ylab(paste0("PC2: ",percentVar[2],"% variance")) + 
+  coord_fixed()
+```
 
 
 
