@@ -414,7 +414,7 @@ Le colonne che ci interessano sono la prima e l'ultima (7). Perché per alcuni g
 
 ```{r, engine = 'bash', eval = F}
 # scarichiamo dal server il file con le conte per i 3 controlli e i 3 trattati
-scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/countDF_unvs3h featureCounts/
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/countDF_unvs3h featureCounts/countDF_unvs3h
 # vediamo il file
 less -S featureCounts/countDF_unvs3h
 ```
@@ -463,6 +463,8 @@ Torniamo alla lezione. Apriamo RStudio e ci spostiamo nella cartella dove abbiam
 setwd("/home/usr/Scaricati/tc/featureCounts") 
 # "usr" è variabile a seconda del vostro nome utente, usate il tab per completare il percorso
 ```
+
+**Input data**
 
 ```{r, eval=F}
 # carichiamo la libreria
@@ -710,12 +712,140 @@ dotplot(kk)
 cnetplot(kk, categorySize="pvalue")
 ```
 
+### ESERCIZIO GENE ONTOLOGIES
+
 **Come esercizio provate a ripetere le analisi di gene ontologies sulle restanti categorie (CC, MF) per i down-regolati e su tutte le categorie per gli up-regolati, considerando sempre un log2FC > 4**
 
+### DIMOSTRAZIONE DESEQ2 CON 3 CONDIZIONI SPERIMENTALI
 
+Se rimane tempo si può continuare analizzando il dataset con i campioni trattati per 8 ore e trovare geni modulati solo tra le 3 e le 8 ore. Tenete presente che quando si esegue il test dei geni differenzialmente espressi, si possono selezionare i confronti desiderati con l'opzione `contrast` del comando `results`
 
+```{r, engine = 'bash', eval = F}
+# scarichiamo dal server il file con le conte per i 3 controlli e i 6 trattati
+scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/countDF_deseq featureCounts/countDF_deseq
+# vediamo il file
+less -S featureCounts/countDF_deseq
+```
 
+**Input data**
 
+```{r}
+# carichiamo il nuovo file con i 6 trattati
+cts.2 <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_deseq", sep="\t",
+                              header=T,
+                              col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3","NO8_1","NO8_2","NO8_3"),
+                           row.names = "ID"))
 
+# per voi il percorso è solo featureCounts/
 
+head(cts.2)
 
+# creiamo oggetto per il disegno sperimentale
+coldata.2 <- data.frame(row.names = colnames(cts.2))
+coldata.2$condition <- c(rep("untreated", 3), rep("treated", 6))
+coldata.2$time <- c(rep("0", 3), rep("3", 3), rep("8", 3))
+str(coldata.2)
+
+# convertiamo le colonna in factor per poterle usare nella formula
+coldata.2$condition <- as.factor(coldata.2$condition)
+coldata.2$time <- as.factor(coldata.2$time)
+str(coldata.2)
+
+# costruiamo l'oggetto DESeq, attenzione che stiamo usando come design la colonna condition, che abbiamo specificato avere 2 livelli: untreated and treated, quindi quando chiederemo i risultati per questo oggetto troveremo i geni che sono modulati sia a 3 che a 8 ore, contro i non trattati. Per trovare i modulati su più livelli dobbiamo specificare come design la colonna time
+dds.2 <- DESeqDataSetFromMatrix(countData = cts.2,
+                              colData = coldata.2,
+                              design = ~ condition )
+
+dds.2 <- DESeqDataSetFromMatrix(countData = cts.2,
+                              colData = coldata.2,
+                              design = ~ time )
+
+# ordiniamo i livelli per usare "untreated" come confronto
+dds.2$condition <- relevel(dds.2$condition, ref = "untreated")
+
+dds.2$time <- relevel(dds.2$time, ref = "0")
+
+# vediamo info sull'oggetto creato
+dds.2
+
+# rimuoviamo geni mai espressi
+dds.2 <- dds.2 [rowSums(counts(dds.2)) > 0, ]
+
+dds.2
+# quanti erano?
+```
+
+**Data exploration with DESeq2**
+
+```{r, dev="svg"}
+library(tidyverse)
+# trasformiamo i dati per la  PCA; correggiamo per rendere dataset omoschedastico
+# facciamo 2 trasformazioni proprie di DESeq2, rlog e vst
+rld.2 <- rlog(dds.2, blind = FALSE)
+head(assay(rld.2),3)
+
+vsd.2 <- vst(dds.2, blind = FALSE)
+head(assay(vsd.2),3)
+
+# calcoliamo PCA sui dati trasformati con rlog usando la funzione di R,
+# dist, che calcola distanze Euclidee sulla matrice trasposa rld
+sampleDists.2 <- dist(t(assay(rld.2)))
+sampleDists.2
+
+# plottiamo heatmap delle distanze specificando noi stessi la distanza che abbiamo
+# appena calcolato con l'argomento "clustering distance"
+sampleDistMatrix.2 <- as.matrix( sampleDists.2 )
+rownames(sampleDistMatrix.2) <- rownames(coldata.2)
+colnames(sampleDistMatrix.2) <- rownames(coldata.2)
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+
+pheatmap(sampleDistMatrix.2,
+         clustering_distance_rows = sampleDists.2,
+         clustering_distance_cols = sampleDists.2,
+         col = colors
+         )
+
+# plottiamo PCA
+# custom PCA plot
+pcaData.2 <- plotPCA(rld.2, intgroup=c("condition", "time"), returnData=TRUE)
+pcaData.vsd.2 <- plotPCA(vsd.2, intgroup=c("condition", "time"), returnData=TRUE)
+
+ggplot(pcaData.2, aes(PC1, PC2, color=condition, shape=time)) +
+  geom_text_repel(aes(label=pcaData.2$name)) +
+  geom_point(size=3) +
+  theme_bw() +  ggtitle("Data transformed with rld")
+
+# ggplot(pcaData.vsd.2, aes(PC1, PC2, color=condition, shape=time)) +
+#   geom_text_repel(aes(label=pcaData.vsd.2$name)) +
+#   geom_point(size=3) +
+#   theme_bw() +  ggtitle("Data transformed with vsd")
+```
+
+Dopo alcune analisi esplorative possiamo eseguire il test della differenza di espressione tra i geni vero e proprio. Teniamo presente che DESeq2 lavora sulle conte grezze per effettuare il test, e non sui dati trasformati, quindi useremo l'oggetto `dds` e non le trasformazioni `rld` o `vsd`
+
+```{r, message=F, warning=F}
+# comando che effettua l'analisi vera e propria
+dds.2 <- DESeq(dds.2)
+
+# salviamo oggetto con risultati specificando quali confronti
+resultsNames(dds.2)
+
+# se nel disegno abbiamo scelto condition, in questo modo otteniamo
+# i differenzialmente espressi tra treated (0h) e untreated (3h e 8h insieme)
+#res.2 <- results(dds.2, contrast=c("condition","treated","untreated"), alpha = 0.01)
+#summary(res.2)
+
+# in questo modo otteniamo i differenzialmente espressi tra 0 e 3 ore
+res.0.3 <- results(dds.2, contrast=c("time","3","0"), alpha = 0.01)
+summary(res.0.3)
+
+# in questo modo otteniamo i differenzialmente espressi tra 0 e 8 ore
+res.0.8 <- results(dds.2, contrast=c("time","8","0"), alpha = 0.01)
+summary(res.0.8)
+
+# in questo modo otteniamo i differenzialmente espressi tra 3 e 8 ore
+res.3.8 <- results(dds.2, contrast=c("time","8","3"), alpha = 0.01)
+summary(res.3.8)
+```
+
+**L'esercizio è ora quello di trovare i geni differenzialmente espressi in comune tra i vari confronti e quelli unici**
