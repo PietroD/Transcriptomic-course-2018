@@ -380,7 +380,7 @@ Vediamo le opzioni e i parametri di featureCounts:
 * `-o` percorso e nome file di output
 * `-p` indichiamo che lavoriamo su reads paired e che verranno contati i frammenti e non le reads
 * `-t` indica quale feature contare
-* `-g` indica che vogliamo raggrppare tutte le feature in questa meta-feature
+* `-g` indica che vogliamo raggruppare tutte le feature in questa meta-feature
 * `-T` quanti threads vogliamo usare per correre il programma
 * `in.bam` nome del file di allineamento che vogliamo come input
 
@@ -459,6 +459,8 @@ Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possi
 #### DESEQ2
 Torniamo alla lezione. Apriamo RStudio e ci spostiamo nella cartella dove abbiamo il file completo con le conte
 
+![Counts matrix](Scaricati/tc/featureCounts/countDF_unvs3h.txt)
+
 ```{r, eval=F}
 setwd("/home/usr/Scaricati/tc/featureCounts") 
 # "usr" è variabile a seconda del vostro nome utente, usate il tab per completare il percorso
@@ -478,7 +480,7 @@ cts <- as.matrix(read.table("featureCounts/countDF_unvs3h", sep="\t",
 
 ```{r, dev="svg"}
 # non eseguire questo comando, è solo per me
-cts <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_unvs3h", sep="\t",
+cts <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_unvs3h.txt", sep="\t",
                            header=T, col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3"),
                            row.names = "ID"))
 
@@ -533,6 +535,8 @@ sampleDists
 
 # plottiamo heatmap delle distanze specificando noi stessi la distanza che abbiamo
 # appena calcolato con l'argomento "clustering distance"
+library(RColorBrewer)
+library(pheatmap)
 sampleDistMatrix <- as.matrix( sampleDists )
 rownames(sampleDistMatrix) <- rownames(coldata)
 colnames(sampleDistMatrix) <- rownames(coldata)
@@ -727,11 +731,13 @@ scp trascrittomica@157.27.231.104:/home/trascrittomica/Scaricati/countDF_deseq f
 less -S featureCounts/countDF_deseq
 ```
 
+![Counts matrix 2](Scaricati/tc/featureCounts/countDF_deseq.txt)
+
 **Input data**
 
 ```{r}
 # carichiamo il nuovo file con i 6 trattati
-cts.2 <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_deseq", sep="\t",
+cts.2 <- as.matrix(read.table("Scaricati/tc/featureCounts/countDF_deseq.txt", sep="\t",
                               header=T,
                               col.names = c("ID","un1","un2","un3","NO3_1","NO3_2","NO3_3","NO8_1","NO8_2","NO8_3"),
                            row.names = "ID"))
