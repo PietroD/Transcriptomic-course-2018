@@ -624,6 +624,7 @@ plotCounts(dds, gene=which.min(res$log2FoldChange), intgroup="condition")
 plotCounts(dds, gene="AT1G66570", intgroup="condition")
 ```
 
+## DAY 3 - 31 maggio 2018
 ### GENE ONTOLOGY ANALYSIS
 
 Gene ontology: Il discorso sull'essere dei geni
