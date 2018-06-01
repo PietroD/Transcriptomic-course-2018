@@ -454,6 +454,8 @@ Per qualsiasi problema scrivetemi all'indirizzo delfino.pietro@gmail.com o possi
 * Genome wide annotation of Arabidopsis
     + `source("https://bioconductor.org/biocLite.R")`
     + `biocLite("org.At.tair.db")`
+* ggrepel
+    + `install.packages("ggrepel")`
 
 ### DIFFERENTIAL GENE EXPRESSION ANALYSIS
 #### DESEQ2
@@ -537,6 +539,8 @@ sampleDists
 # appena calcolato con l'argomento "clustering distance"
 library(RColorBrewer)
 library(pheatmap)
+library(ggplot2)
+library(ggrepel)
 sampleDistMatrix <- as.matrix( sampleDists )
 rownames(sampleDistMatrix) <- rownames(coldata)
 colnames(sampleDistMatrix) <- rownames(coldata)
@@ -856,3 +860,29 @@ summary(res.3.8)
 ```
 
 **L'esercizio è ora quello di trovare i geni differenzialmente espressi in comune tra i vari confronti e quelli unici**
+
+```{r, eval=F}
+up <- res.0.3$log2FoldChange > 4
+up.0.3 <- res.0.3[up,]
+up.0.3 <- as.data.frame(up.0.3)
+
+up <- res.3.8$log2FoldChange > 4
+up.3.8 <- res.3.8[up,]
+up.3.8 <- as.data.frame(up.3.8)
+
+up <- res.0.8$log2FoldChange > 4
+up.0.8 <- res.0.8[up,]
+up.0.8 <- as.data.frame(up.0.8)
+
+write.csv(up.0.3, file="up_0_3.csv", row.names = T, quote=F)
+write.csv(up.0.8, file="up_0_8.csv", row.names = T, quote=F)
+write.csv(up.3.8, file="up_3_8.csv", row.names = T, quote=F)
+```
+
+A questo punto aprire i file con **Excel** e copiare le liste dei geni up-regolati nel confronto 0-3 ore e quello 0-8 ore e incollarli nella pagina web http://bioinfogp.cnb.csic.es/tools/venny/ in modo da trovare i geni modulati solo in un confronto e quelli in comune tra i due confronti
+
+![Venn Diagram](images/venny.png)
+
+L'esercitazione è conclusa. Per qualsiasi dubbio, curiosità potete scrivermi all'indirizzo 
+
+**delfino [dot] pietro [at] gmail [dot] com**
